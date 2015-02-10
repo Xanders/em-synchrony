@@ -4,6 +4,7 @@ require 'em-synchrony'
 ActiveSupport.on_load(:active_record) do
   class ActiveRecord::ConnectionAdapters::ConnectionPool
     include EventMachine::Synchrony::MonitorMixin
+    Monitor = EventMachine::Synchrony::Monitor
 
     def current_connection_id #:nodoc:
       ActiveRecord::Base.connection_id ||= Fiber.current.object_id
