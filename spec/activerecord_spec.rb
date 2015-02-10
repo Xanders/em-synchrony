@@ -109,4 +109,40 @@ describe "Fiberized ActiveRecord driver for mysql2" do
     end
   end
 
+  describe "ActiveRecord 4" do
+    before(:all) do
+      skip if ActiveRecord::VERSION::MAJOR != 4
+    end
+
+    describe "Reaper" do
+      it "must recover lost connections" do
+        EM.synchrony do
+          ActiveRecord::Base.establish_connection(
+            :adapter => 'em_mysql2',
+            :database => 'widgets',
+            :username => 'root',
+            :reaping_frequency => DELAY,
+            :pool => 2
+          )
+
+          connections = []
+          EM::Synchrony::FiberIterator.new(1..2, 2).each do
+            connections << Widget.connection
+          end
+
+          connections.size.should == 2
+          ActiveRecord::Base.connection_pool.connections.should == connections
+
+          connections.each { |conn| conn.should be_in_use }
+
+          EM::Synchrony.sleep DELAY
+
+          connections.each { |conn| conn.should_not be_in_use }
+
+          EM.stop
+        end
+      end
+    end
+  end
+
 end
