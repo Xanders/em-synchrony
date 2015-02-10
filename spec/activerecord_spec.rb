@@ -24,6 +24,7 @@ describe "Fiberized ActiveRecord driver for mysql2" do
         :pool => 10
       )
       Widget.delete_all
+      Widget.clear_active_connections!
   end
 
   it "should establish AR connection" do
@@ -59,6 +60,7 @@ describe "Fiberized ActiveRecord driver for mysql2" do
       EM::Synchrony::FiberIterator.new(1..100, 40).each do |i|
         widget = Widget.create title: 'hi'
         widget.update_attributes title: 'hello'
+        Widget.clear_active_connections!
       end
       EM.stop
     end
@@ -97,6 +99,7 @@ describe "Fiberized ActiveRecord driver for mysql2" do
           ActiveRecord::Base.transaction do
             raise ActiveRecord::Rollback
           end
+          Widget.clear_active_connections!
         end
         Widget.all.each do |widget|
           widget.title.should eq('hello')
