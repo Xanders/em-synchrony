@@ -11,12 +11,27 @@ ActiveSupport.on_load(:active_record) do
     end
 
     if ActiveRecord::VERSION::MAJOR == 3
+      # on AR 3.x `clear_stale_cached_connections!` uses `Thread.list` and must be re-implemented
       # on AR 4.0 `clear_stale_cached_connections!` is marked as deprecated and just calls `reap`
-      # `reap` on AR 4.x is implemented well and there is no reason to stub it
+      # `reap` on AR 4.x is implemented well and there is no reason to override it
       # on AR >= 4.1 there is no `clear_stale_cached_connections!`
       def clear_stale_cached_connections!
-        []
+        keys = @reserved_connections.keys.reject do |conn_id|
+          @reserved_connections[conn_id].owner.alive?
+        end
+        keys.each do |key|
+          checkin @reserved_connections[key]
+          @reserved_connections.delete(key)
+        end
       end
+
+      def checkout_with_fiber_ownership
+        conn = checkout_without_fiber_ownership
+        conn.owner = Fiber.current
+        conn
+      end
+
+      alias_method_chain :checkout, :fiber_ownership
     end
 
     if ActiveRecord::VERSION::MAJOR == 4
@@ -34,6 +49,10 @@ ActiveSupport.on_load(:active_record) do
 
   class ActiveRecord::ConnectionAdapters::AbstractAdapter
     include EventMachine::Synchrony::MonitorMixin
+
+    if ActiveRecord::VERSION::MAJOR == 3
+      attr_accessor :owner
+    end
 
     if ActiveRecord::VERSION::MAJOR == 4
       if ActiveRecord::VERSION::MINOR == 2
