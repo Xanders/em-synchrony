@@ -104,7 +104,7 @@ describe "Fiberized ActiveRecord driver for mysql2" do
   end
 
   describe "ActiveRecord 4" do
-    before(:all) do
+    before do
       skip if ActiveRecord::VERSION::MAJOR != 4
     end
 
