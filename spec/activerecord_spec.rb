@@ -116,7 +116,7 @@ describe "Fiberized ActiveRecord driver for mysql2" do
             :database => 'widgets',
             :username => 'root',
             :reaping_frequency => DELAY,
-            :dead_connection_timeout => DELAY,
+            :dead_connection_timeout => DELAY * 2,
             :pool => 2
           )
 
