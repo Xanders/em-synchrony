@@ -116,6 +116,7 @@ describe "Fiberized ActiveRecord driver for mysql2" do
             :database => 'widgets',
             :username => 'root',
             :reaping_frequency => DELAY,
+            :dead_connection_timeout => DELAY,
             :pool => 2
           )
 
@@ -127,11 +128,16 @@ describe "Fiberized ActiveRecord driver for mysql2" do
           connections.size.should == 2
           ActiveRecord::Base.connection_pool.connections.should == connections
 
+          connections.each do |conn|
+            allow(conn).to receive(:active?).and_return(false)
+          end
+
           connections.each { |conn| conn.should be_in_use }
 
-          EM::Synchrony.sleep DELAY
-
-          connections.each { |conn| conn.should_not be_in_use }
+          start_time = Time.now
+          Widget.connection
+          end_time = Time.now
+          (end_time - start_time).should be > DELAY
 
           EM.stop
         end
