@@ -16,10 +16,6 @@ module ActiveRecord
       def _fibered_mutex
         @fibered_mutex ||= EM::Synchrony::Thread::Mutex.new
       end
-
-      def current_connection_id
-        ActiveRecord::Base.connection_id ||= Fiber.current.object_id
-      end
     end
   end
 end
