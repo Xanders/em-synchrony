@@ -60,12 +60,14 @@ describe "Fiberized ActiveRecord driver for mysql2" do
 
   it "should effectively use pool in high concurrency" do
     EM.synchrony do
+      require 'active_record/connection_adapters/em_mysql2_adapter'
+      expect(ActiveRecord::ConnectionAdapters::EMMysql2Adapter::Client).to receive(:new).exactly(11).times.and_call_original
       establish_connection
       EM::Synchrony::FiberIterator.new(1..100, 40).each do |i|
         widget = Widget.create title: 'hi'
         widget.update_attributes title: 'hello'
       end
-      expect(Widget.connection_pool.connections.size).to eq(10)
+      # expect(Widget.connection_pool.connections.size).to eq(10)
       EM.stop
     end
   end
