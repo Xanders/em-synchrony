@@ -1,4 +1,4 @@
-﻿require 'active_record'
+require 'active_record'
 require 'em-synchrony'
 
 ActiveSupport.on_load(:active_record) do
