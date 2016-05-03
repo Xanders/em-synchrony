@@ -1,4 +1,4 @@
-require 'active_record'
+﻿require 'active_record'
 require 'em-synchrony'
 
 ActiveSupport.on_load(:active_record) do
@@ -6,8 +6,14 @@ ActiveSupport.on_load(:active_record) do
     include EventMachine::Synchrony::MonitorMixin
     Monitor = EventMachine::Synchrony::Monitor
 
-    def current_connection_id #:nodoc:
-      ActiveRecord::Base.connection_id ||= Fiber.current.object_id
+    if ActiveRecord::VERSION::MAJOR >= 5
+      def connection_cache_key(scope) #:nodoc:
+        scope.kind_of?(Fiber) ? scope : Fiber.current
+      end
+    else
+      def current_connection_id #:nodoc:
+        ActiveRecord::Base.connection_id ||= Fiber.current.object_id
+      end
     end
 
     if ActiveRecord::VERSION::MAJOR == 3
@@ -34,8 +40,8 @@ ActiveSupport.on_load(:active_record) do
       alias_method_chain :checkout, :fiber_ownership
     end
 
-    if ActiveRecord::VERSION::MAJOR == 4
-      # on AR 4.x if `reaping_frequency` option used, it should work correctly
+    if ActiveRecord::VERSION::MAJOR >= 4
+      # on AR 4.x and older if `reaping_frequency` option used, it should work correctly
       class Reaper
         def run
           return unless frequency
@@ -54,14 +60,12 @@ ActiveSupport.on_load(:active_record) do
       attr_accessor :owner
     end
 
-    if ActiveRecord::VERSION::MAJOR == 4
-      if ActiveRecord::VERSION::MINOR == 2
-        # on AR 4.2 `lease` sets @owner to Thread.current so we should implement it fiber aware
-        def lease
-          synchronize do
-            unless in_use?
-              @owner = Fiber.current
-            end
+    if ActiveRecord::VERSION::MAJOR == 4 && ActiveRecord::VERSION::MINOR >= 2 || ActiveRecord::VERSION::MAJOR >= 5
+      # on AR 4.2 and older `lease` sets @owner to Thread.current so we should implement it fiber aware
+      def lease
+        synchronize do
+          unless in_use?
+            @owner = Fiber.current
           end
         end
       end
