@@ -1,4 +1,4 @@
-# encoding: utf-8
+﻿# encoding: utf-8
 
 # AR adapter for using a fibered mysql2 connection with EM
 # This adapter should be used within Thin or Unicorn with the rack-fiber_pool middleware.
@@ -28,9 +28,17 @@ module ActiveRecord
     class EmMysql2Adapter < Mysql2Adapter
       ADAPTER_NAME = 'EmMySql2'
 
-      class Column < AbstractMysqlAdapter::Column # :nodoc:
-        def adapter
-          EmMysql2Adapter
+      if defined? MySQL::Column
+        class Column < MySQL::Column # :nodoc:
+          def adapter
+            EmMysql2Adapter
+          end
+        end
+      else
+        class Column < AbstractMysqlAdapter::Column # :nodoc:
+          def adapter
+            EmMysql2Adapter
+          end
         end
       end
 
